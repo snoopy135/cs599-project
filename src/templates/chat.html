@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}AI 助手 · 招聘政策问答{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <div class="chat-column">
+        <div class="chat-card">
+            <div class="chat-card-header">
+                <h5><i class="bi bi-robot"></i> AI 招聘政策助手</h5>
+                <span class="badge-mode ai" id="modeBadge">AI 增强模式</span>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div id="welcomeArea" style="padding:40px 0;text-align:center;">
+                    <div style="font-size:3rem;margin-bottom:16px;">🤖</div>
+                    <h6 style="color:var(--color-text);font-weight:600;">您好，我是招聘政策 AI 助手</h6>
+                    <p style="color:var(--color-text-secondary);font-size:0.85rem;margin-bottom:20px;">基于内部招聘政策库为您解答疑问</p>
+                    <div class="quick-questions" style="justify-content:center;">
+                        <span class="quick-question-tag" data-question="招聘流程是怎样的？">招聘流程是怎样的？</span>
+                        <span class="quick-question-tag" data-question="面试需要准备什么材料？">面试需要准备什么材料？</span>
+                        <span class="quick-question-tag" data-question="入职后试用期多久？">入职后试用期多久？</span>
+                        <span class="quick-question-tag" data-question="公司提供哪些福利？">公司提供哪些福利？</span>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <div class="chat-input-row">
+                    <input type="text" id="chatInput" class="chat-input-field" placeholder="输入您的招聘政策相关问题..." autocomplete="off" autofocus>
+                    <button class="btn-send" id="sendBtn"><i class="bi bi-send"></i> 发送</button>
+                </div>
+                <div class="d-flex justify-content-between mt-2 px-1">
+                    <button id="clearChatBtn" style="background:none;border:none;color:var(--color-text-secondary);font-size:0.75rem;cursor:pointer;"><i class="bi bi-arrow-counterclockwise"></i> 新对话</button>
+                    <a href="/" style="font-size:0.72rem;color:var(--color-text-secondary);text-decoration:none;"><i class="bi bi-house"></i> 返回首页</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% if not session.get('admin_logged_in') %}
+    <div class="resume-sidebar">
+        <div class="resume-side-card" id="resumeSideCard">
+            <div class="icon-circle"><i class="bi bi-file-earmark-arrow-up"></i></div>
+            <h6>加入我们</h6>
+            <p>投递简历，开启职业新篇章</p>
+            <button class="btn-resume" id="openResumeModalBtn"><i class="bi bi-upload"></i> 投递简历</button>
+            <div id="submittedIndicator" style="display:none;"><span class="submitted-badge"><i class="bi bi-check-circle"></i> 已投递</span></div>
+        </div>
+        <div style="margin-top:16px;padding:16px;background:white;border-radius:var(--radius-lg);border:1px solid var(--color-border);box-shadow:var(--shadow-sm);">
+            <p style="font-size:0.78rem;color:var(--color-text-secondary);margin:0;line-height:1.6;"><i class="bi bi-info-circle"></i> AI 回答基于内部政策库。如 AI 不可用，自动切换检索模式。</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}

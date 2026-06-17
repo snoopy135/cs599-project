@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% block title %}API 配置{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>⚙️ AI 模型 API 配置</h3>
+        <a href="/admin/dashboard" class="btn-admin-outline"><i class="bi bi-arrow-left"></i> 返回</a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="stat-card" style="text-align:left;padding:24px;">
+                <h6 style="font-weight:600;color:var(--color-text);margin-bottom:20px;">API 参数</h6>
+                <form method="POST" action="/admin/api" id="apiForm">
+                    <div class="mb-3">
+                        <label class="form-label">API URL</label>
+                        <input type="url" class="form-control" name="api_url" value="{{ settings.get('api_url', '') }}" required>
+                        <div style="font-size:0.75rem;color:var(--color-text-secondary);margin-top:4px;">
+                            API 端点地址，支持 OpenAI 兼容接口（OpenAI、DeepSeek、智谱、通义千问、Kimi、Ollama 等国内外模型）
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">API Key</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" name="api_key" id="apiKeyInput"
+                                   value="{{ settings.get('api_key', '') }}" placeholder="sk-...">
+                            <button class="btn-admin-outline" type="button" id="toggleKeyBtn"
+                                    style="border-radius:0 8px 8px 0;"><i class="bi bi-eye"></i></button>
+                        </div>
+                        <div style="font-size:0.75rem;color:var(--color-text-secondary);margin-top:4px;">
+                            当前: <code>{{ settings.get('api_key_display', '未设置') }}</code>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">模型名称</label>
+                        <input type="text" class="form-control" name="model_name"
+                               value="{{ settings.get('model_name', 'gpt-3.5-turbo') }}" required>
+                        <div style="font-size:0.75rem;color:var(--color-text-secondary);margin-top:4px;">
+                            如: gpt-4o, deepseek-chat, glm-4-flash, qwen-turbo, moonshot-v1-8k, llama3 等
+                        </div>
+                    </div>
+
+                    <!-- Temperature -->
+                    <div class="mb-3">
+                        <label class="form-label d-flex justify-content-between">
+                            <span>Temperature <span id="tempValue" style="font-weight:700;color:var(--color-primary);">{{ settings.get('temperature', '0.7') }}</span></span>
+                            <span style="font-size:0.7rem;color:var(--color-text-secondary);font-weight:400;">
+                                <i class="bi bi-info-circle"></i> 控制回答的随机性和创造性
+                            </span>
+                        </label>
+                        <input type="range" class="form-range" name="temperature" min="0" max="2" step="0.1"
+                               value="{{ settings.get('temperature', '0.7') }}" id="tempSlider"
+                               style="accent-color:var(--color-primary);">
+                        <div style="background:#fafaff;border-radius:8px;padding:8px 12px;font-size:0.72rem;color:var(--color-text-secondary);line-height:1.5;">
+                            <strong>0.0</strong> = 精确确定，回答固定不变，适合需要一致性的场景 ·
+                            <strong>1.0</strong> = 平衡创意与准确（推荐） ·
+                            <strong>2.0</strong> = 最大随机性，回答多样化但可能偏离主题
+                        </div>
+                    </div>
+
+                    <!-- Max Tokens -->
+                    <div class="mb-3">
+                        <label class="form-label d-flex justify-content-between">
+                            <span>Max Tokens</span>
+                            <span style="font-size:0.7rem;color:var(--color-text-secondary);font-weight:400;">
+                                <i class="bi bi-info-circle"></i> 限制单次回答的最大长度
+                            </span>
+                        </label>
+                        <input type="number" class="form-control" name="max_tokens"
+                               value="{{ settings.get('max_tokens', '2000') }}" min="50" max="16384">
+                        <div style="background:#fafaff;border-radius:8px;padding:8px 12px;font-size:0.72rem;color:var(--color-text-secondary);line-height:1.5;">
+                            Token 是模型处理文本的基本单位。中文约 1 个汉字 ≈ 1.5~2 个 token。<br>
+                            <strong>500</strong> = 简短回答 ·
+                            <strong>2000</strong> = 详细回答（推荐） ·
+                            <strong>8000+</strong> = 超长详细回答，适合复杂政策解读
+                        </div>
+                    </div>
+
+                    <!-- 系统提示词 -->
+                    <div class="mb-3">
+                        <label class="form-label">自定义系统提示词</label>
+                        <textarea class="form-control" name="system_prompt" rows="6" style="font-size:0.82rem;line-height:1.6;"
+                                  placeholder="留空则使用系统默认提示词（见下方预览）">{{ settings.get('system_prompt', '') }}</textarea>
+                        <div style="font-size:0.72rem;color:var(--color-text-secondary);margin-top:4px;">
+                            自定义 AI 助手的行为风格和回答规则。留空则自动使用下方默认提示词。
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn-admin-primary"><i class="bi bi-check-circle"></i> 保存配置</button>
+                        <button type="button" class="btn-admin-outline" id="testApiBtn2">
+                            <i class="bi bi-lightning-charge"></i> 保存并测试连接
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 默认提示词预览 -->
+            <div class="stat-card mt-3" style="text-align:left;padding:20px;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 style="font-weight:600;color:var(--color-text);margin:0;">
+                        📋 系统默认提示词 <span class="badge" style="background:var(--color-primary-bg);color:var(--color-primary);font-size:0.7rem;">当前使用中</span>
+                    </h6>
+                </div>
+                <div id="defaultPromptPreview" style="background:#fafaff;border-radius:8px;padding:14px;font-size:0.8rem;line-height:1.7;max-height:250px;overflow-y:auto;white-space:pre-wrap;color:var(--color-text-secondary);">
+                    加载中...
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <!-- 连接测试卡片 -->
+            <div class="stat-card" style="text-align:left;padding:24px;margin-bottom:16px;">
+                <h6 style="font-weight:600;color:var(--color-text);margin-bottom:8px;">🔌 连接测试</h6>
+                <p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:16px;">
+                    使用当前设置的参数向 API 发送测试请求，验证配置是否正确。
+                </p>
+                <button class="btn-admin-primary w-100" id="testApiBtn">
+                    <i class="bi bi-play-circle"></i> 测试连接
+                </button>
+                <div id="testResult" class="mt-3" style="display:none;"></div>
+            </div>
+
+            <!-- 快速预设 -->
+            <div class="stat-card" style="text-align:left;padding:24px;">
+                <h6 style="font-weight:600;color:var(--color-text);margin-bottom:12px;">⭐ 快速预设</h6>
+                <p style="font-size:0.72rem;color:var(--color-text-secondary);margin-bottom:12px;">点击预设自动填充 API URL 和模型名称，支持国内外主流模型</p>
+
+                <div style="margin-bottom:12px;">
+                    <span style="font-size:0.7rem;color:var(--color-text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">🌍 国际模型</span>
+                </div>
+                <button class="btn-admin-outline w-100 mb-2 preset-btn" data-url="https://api.openai.com/v1/chat/completions" data-model="gpt-4o">
+                    <i class="bi bi-stars"></i> OpenAI (GPT-4o)
+                </button>
+                <button class="btn-admin-outline w-100 mb-2 preset-btn" data-url="https://api.openai.com/v1/chat/completions" data-model="gpt-3.5-turbo">
+                    <i class="bi bi-stars"></i> OpenAI (GPT-3.5 Turbo)
+                </button>
+
+                <div style="margin:16px 0 12px;">
+                    <span style="font-size:0.7rem;color:var(--color-text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">🇨🇳 中国模型</span>
+                </div>
+                <button class="btn-admin-outline w-100 mb-2 preset-btn" data-url="https://api.deepseek.com/v1/chat/completions" data-model="deepseek-chat">
+                    <i class="bi bi-cpu"></i> DeepSeek (V3/R1)
+                </button>
+                <button class="btn-admin-outline w-100 mb-2 preset-btn" data-url="https://open.bigmodel.cn/api/paas/v4/chat/completions" data-model="glm-4-flash">
+                    <i class="bi bi-lightbulb"></i> 智谱 GLM-4
+                </button>
+                <button class="btn-admin-outline w-100 mb-2 preset-btn" data-url="https://api.moonshot.cn/v1/chat/completions" data-model="moonshot-v1-8k">
+                    <i class="bi bi-moon"></i> 月之暗面 Kimi
+                </button>
+                <button class="btn-admin-outline w-100 mb-2 preset-btn" data-url="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" data-model="qwen-turbo">
+                    <i class="bi bi-cloud"></i> 阿里通义千问 (Qwen)
+                </button>
+                <button class="btn-admin-outline w-100 mb-2 preset-btn" data-url="https://api.baichuan-ai.com/v1/chat/completions" data-model="baichuan2-turbo">
+                    <i class="bi bi-droplet"></i> 百川智能 (Baichuan)
+                </button>
+                <button class="btn-admin-outline w-100 mb-2 preset-btn" data-url="https://api.siliconflow.cn/v1/chat/completions" data-model="Qwen/Qwen2.5-7B-Instruct">
+                    <i class="bi bi-cpu-fill"></i> 硅基流动 (SiliconFlow)
+                </button>
+
+                <div style="margin:16px 0 12px;">
+                    <span style="font-size:0.7rem;color:var(--color-text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">💻 本地模型</span>
+                </div>
+                <button class="btn-admin-outline w-100 mb-2 preset-btn" data-url="http://localhost:11434/v1/chat/completions" data-model="llama3">
+                    <i class="bi bi-box"></i> Ollama (LLaMA3)
+                </button>
+                <button class="btn-admin-outline w-100 preset-btn" data-url="http://localhost:11434/v1/chat/completions" data-model="qwen2.5">
+                    <i class="bi bi-box"></i> Ollama (Qwen2.5)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 测试结果弹窗 -->
+<div class="modal fade" id="testResultModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;border:none;">
+            <div class="modal-header" id="testResultHeader" style="border-radius:16px 16px 0 0;">
+                <h5 class="modal-title" id="testResultTitle">连接测试</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4" id="testResultBody">
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn-admin-outline" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Load default prompt preview
+fetch('/admin/default-prompt')
+    .then(r => r.text())
+    .then(t => {
+        document.getElementById('defaultPromptPreview').textContent = t.trim();
+    })
+    .catch(() => {
+        document.getElementById('defaultPromptPreview').textContent = '（需要登录后查看默认提示词）';
+    });
+
+// Temperature slider
+document.getElementById('tempSlider').addEventListener('input', function(){
+    document.getElementById('tempValue').textContent = this.value;
+});
+
+// Toggle API key visibility
+document.getElementById('toggleKeyBtn').addEventListener('click', function(){
+    const i = document.getElementById('apiKeyInput');
+    i.type = i.type === 'password' ? 'text' : 'password';
+});
+
+// Test API connection
+async function testConnection() {
+    const apiUrl = document.querySelector('[name=api_url]').value;
+    const apiKey = document.querySelector('[name=api_key]').value;
+    const modelName = document.querySelector('[name=model_name]').value;
+
+    if (!apiUrl) { alert('请填写 API URL'); return; }
+    if (!apiKey) { alert('请填写 API Key'); return; }
+
+    // Show loading in modal
+    const header = document.getElementById('testResultHeader');
+    const title = document.getElementById('testResultTitle');
+    const body = document.getElementById('testResultBody');
+    title.textContent = '正在测试...';
+    header.style.background = '#f5f3ff';
+    header.style.color = '#374151';
+    body.innerHTML = `
+        <div class="spinner-border" style="color:var(--color-primary);width:3rem;height:3rem;"></div>
+        <p class="mt-3" style="color:var(--color-text-secondary);">正在连接 ${apiUrl}</p>
+    `;
+    new bootstrap.Modal('#testResultModal').show();
+
+    try {
+        const resp = await fetch('/admin/api/test', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ api_url: apiUrl, api_key: apiKey, model_name: modelName })
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+            header.style.background = 'linear-gradient(135deg, #34d399, #10b981)';
+            header.style.color = 'white';
+            title.textContent = '✓ 连接成功';
+            body.innerHTML = `
+                <div style="font-size:3rem;margin-bottom:8px;">✅</div>
+                <h6 style="color:#059669;">API 连接正常，模型可以正常使用</h6>
+                <div style="background:#f0fdf4;border-radius:8px;padding:12px;margin-top:12px;font-size:0.85rem;color:#065f46;text-align:left;">
+                    <strong>模型回复：</strong><br>${data.message.replace('连接成功！模型回复: ', '')}
+                </div>
+            `;
+        } else {
+            header.style.background = 'linear-gradient(135deg, #f87171, #ef4444)';
+            header.style.color = 'white';
+            title.textContent = '✗ 连接失败';
+            body.innerHTML = `
+                <div style="font-size:3rem;margin-bottom:8px;">❌</div>
+                <h6 style="color:#dc2626;">API 连接失败，请检查配置</h6>
+                <div style="background:#fef2f2;border-radius:8px;padding:12px;margin-top:12px;font-size:0.85rem;color:#991b1b;text-align:left;">
+                    <strong>错误信息：</strong><br>${data.message}
+                </div>
+            `;
+        }
+    } catch (err) {
+        header.style.background = 'linear-gradient(135deg, #f87171, #ef4444)';
+        header.style.color = 'white';
+        title.textContent = '✗ 网络错误';
+        body.innerHTML = `
+            <div style="font-size:3rem;margin-bottom:8px;">🌐</div>
+            <h6 style="color:#dc2626;">无法连接到服务器</h6>
+            <p style="color:var(--color-text-secondary);font-size:0.85rem;">请检查网络或 API URL 是否正确</p>
+        `;
+    }
+}
+
+document.getElementById('testApiBtn').addEventListener('click', testConnection);
+document.getElementById('testApiBtn2').addEventListener('click', async function() {
+    // Submit form first, then test
+    const form = document.getElementById('apiForm');
+    const fd = new FormData(form);
+    try {
+        await fetch('/admin/api', { method: 'POST', body: fd });
+    } catch(e) {}
+    testConnection();
+});
+
+// Quick presets
+document.querySelectorAll('.preset-btn').forEach(b => b.addEventListener('click', function(){
+    document.querySelector('[name=api_url]').value = this.dataset.url;
+    document.querySelector('[name=model_name]').value = this.dataset.model;
+}));
+</script>
+{% endblock %}

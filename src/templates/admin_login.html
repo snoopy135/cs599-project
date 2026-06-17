@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}管理员登录{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card">
+        <div style="text-align:center; margin-bottom: 8px;">
+            <span style="font-size:2.5rem;">🔐</span>
+        </div>
+        <h4>管理员登录</h4>
+        <p class="auth-subtitle">请输入管理员凭据</p>
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">用户名</label>
+                <input type="text" class="form-control" name="username"
+                       placeholder="请输入用户名" required autofocus>
+            </div>
+            <div class="mb-4">
+                <label class="form-label">密码</label>
+                <input type="password" class="form-control" name="password"
+                       placeholder="请输入密码" required>
+            </div>
+            <button type="submit" class="btn-auth">
+                <i class="bi bi-box-arrow-in-right"></i> 登录
+            </button>
+        </form>
+        <p style="text-align:center;margin-top:20px;font-size:0.78rem;color:var(--color-text-secondary);">
+            默认账号: admin / admin123
+        </p>
+    </div>
+</div>
+{% endblock %}
