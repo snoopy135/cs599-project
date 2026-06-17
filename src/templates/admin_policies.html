@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}政策库管理{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>📚 政策库管理</h3>
+        <div class="d-flex gap-2">
+            <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#uploadPolicyModal">
+                <i class="bi bi-plus-circle"></i> 上传政策
+            </button>
+            <a href="/admin/dashboard" class="btn-admin-outline"><i class="bi bi-arrow-left"></i> 返回</a>
+        </div>
+    </div>
+
+    <!-- 分类筛选 -->
+    <div class="mb-3 d-flex flex-wrap gap-1 align-items-center">
+        <span style="font-size:0.82rem;color:var(--color-text-secondary);margin-right:8px;">筛选:</span>
+        <span class="category-badge filter-badge active" data-cat="all" style="cursor:pointer;">全部</span>
+        {% for cat in categories %}
+        <span class="category-badge filter-badge" data-cat="{{ cat }}" style="cursor:pointer;background:#f3f4f6;color:var(--color-text-secondary);">{{ cat }}</span>
+        {% endfor %}
+    </div>
+
+    {% if policies %}
+    <div class="admin-table">
+        <table class="table mb-0" id="policyTable">
+            <thead>
+                <tr><th>ID</th><th>标题</th><th>分类</th><th>更新时间</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+                {% for p in policies %}
+                <tr data-category="{{ p.category }}">
+                    <td style="color:var(--color-text-secondary);">#{{ p.id }}</td>
+                    <td style="font-weight:500;">{{ p.title }}</td>
+                    <td><span class="category-badge">{{ p.category }}</span></td>
+                    <td style="font-size:0.78rem;color:var(--color-text-secondary);">{{ p.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <button class="btn-admin-outline btn-sm view-policy-btn" data-id="{{ p.id }}" data-title="{{ p.title }}">查看</button>
+                        <button class="btn-admin-outline btn-sm edit-policy-btn" data-id="{{ p.id }}" data-title="{{ p.title }}">编辑</button>
+                        <button class="btn-admin-outline btn-sm delete-policy-btn" data-id="{{ p.id }}" data-title="{{ p.title }}" style="color:var(--color-danger);">删除</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="stat-card" style="padding:60px;">
+        <div style="font-size:3rem;">📭</div>
+        <p style="color:var(--color-text-secondary);margin-top:12px;">政策库为空，请上传招聘政策文档</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 上传弹窗 -->
+<div class="modal fade" id="uploadPolicyModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">上传政策文档</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="uploadPolicyForm" enctype="multipart/form-data">
+                    <div class="mb-3"><label class="form-label">标题 <span style="color:var(--color-accent);">*</span></label><input class="form-control" name="title" required placeholder="如：2024年校园招聘政策"></div>
+                    <div class="mb-3"><label class="form-label">分类</label>
+                        <select class="form-control" name="category">
+                            <option>综合</option><option>校园招聘</option><option>社会招聘</option><option>实习生</option><option>内部推荐</option><option>面试录用</option><option>入职管理</option><option>薪资福利</option><option>其他</option>
+                        </select>
+                    </div>
+                    <div class="mb-3"><label class="form-label">文件 <span style="color:var(--color-accent);">*</span></label><input type="file" class="form-control" name="policy_file" required accept=".txt,.md,.pdf,.docx"><small style="color:var(--color-text-secondary);">支持 TXT、MD、PDF、Word</small></div>
+                </form>
+                <div id="uploadResult" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-admin-outline" data-bs-dismiss="modal">取消</button>
+                <button class="btn-admin-primary" id="uploadSubmitBtn">上传</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 查看弹窗 -->
+<div class="modal fade" id="policyDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="policyDetailTitle">政策详情</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body"><div id="policyDetailContent" style="max-height:450px;overflow-y:auto;white-space:pre-wrap;background:#fafaff;border-radius:var(--radius-md);padding:18px;font-size:0.875rem;line-height:1.8;">加载中...</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑弹窗 -->
+<div class="modal fade" id="editPolicyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">编辑政策</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="editPolicyId">
+                <div class="mb-3"><label class="form-label">标题</label><input class="form-control" id="editPolicyTitle"></div>
+                <div class="mb-3"><label class="form-label">分类</label><select class="form-control" id="editPolicyCategory"><option>综合</option><option>校园招聘</option><option>社会招聘</option><option>实习生</option><option>内部推荐</option><option>面试录用</option><option>入职管理</option><option>薪资福利</option><option>其他</option></select></div>
+                <div class="mb-3"><label class="form-label">内容</label><textarea class="form-control" id="editPolicyContent" rows="15" style="font-family:monospace;font-size:0.85rem;"></textarea></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-admin-outline" data-bs-dismiss="modal">取消</button>
+                <button class="btn-admin-primary" id="savePolicyBtn">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Upload
+document.getElementById('uploadSubmitBtn').addEventListener('click', async function(){
+    const fd = new FormData(document.getElementById('uploadPolicyForm'));
+    this.disabled = true; this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 上传中...';
+    try {
+        const r = await fetch('/admin/policies/upload', {method:'POST', body:fd});
+        const d = await r.json();
+        const div = document.getElementById('uploadResult');
+        div.style.display = 'block';
+        div.innerHTML = d.success ? `<div class="alert alert-success py-2">${d.message}</div>` : `<div class="alert alert-danger py-2">${d.message}</div>`;
+        if (d.success) setTimeout(() => location.reload(), 1200);
+    } catch(e) { document.getElementById('uploadResult').innerHTML = '<div class="alert alert-danger py-2">上传失败</div>'; }
+    this.disabled = false; this.innerHTML = '上传';
+});
+
+// View
+document.querySelectorAll('.view-policy-btn').forEach(b => b.addEventListener('click', async function(){
+    document.getElementById('policyDetailTitle').textContent = this.dataset.title;
+    document.getElementById('policyDetailContent').textContent = '加载中...';
+    new bootstrap.Modal('#policyDetailModal').show();
+    const r = await fetch(`/admin/policies/${this.dataset.id}`);
+    document.getElementById('policyDetailContent').textContent = (await r.json()).content_text;
+}));
+
+// Edit
+document.querySelectorAll('.edit-policy-btn').forEach(b => b.addEventListener('click', async function(){
+    const id = this.dataset.id;
+    document.getElementById('editPolicyId').value = id;
+    const d = await (await fetch(`/admin/policies/${id}`)).json();
+    document.getElementById('editPolicyTitle').value = d.title;
+    document.getElementById('editPolicyCategory').value = d.category;
+    document.getElementById('editPolicyContent').value = d.content_text;
+    new bootstrap.Modal('#editPolicyModal').show();
+}));
+
+document.getElementById('savePolicyBtn').addEventListener('click', async function(){
+    const id = document.getElementById('editPolicyId').value;
+    const data = {title: document.getElementById('editPolicyTitle').value, category: document.getElementById('editPolicyCategory').value, content_text: document.getElementById('editPolicyContent').value};
+    const r = await fetch(`/admin/policies/${id}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+    if ((await r.json()).success) location.reload();
+    else alert('保存失败');
+});
+
+// Delete
+document.querySelectorAll('.delete-policy-btn').forEach(b => b.addEventListener('click', async function(){
+    if (!confirm(`确定删除「${this.dataset.title}」？`)) return;
+    const r = await fetch(`/admin/policies/${this.dataset.id}`, {method:'DELETE'});
+    if ((await r.json()).success) location.reload();
+}));
+
+// Filter
+document.querySelectorAll('.filter-badge').forEach(b => b.addEventListener('click', function(){
+    document.querySelectorAll('.filter-badge').forEach(x => {x.style.background='#f3f4f6';x.style.color='var(--color-text-secondary)';});
+    this.style.background='var(--color-primary-bg)'; this.style.color='var(--color-primary)';
+    const cat = this.dataset.cat;
+    document.querySelectorAll('#policyTable tbody tr').forEach(r => r.style.display = (cat==='all'||r.dataset.category===cat)?'':'none');
+}));
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}管理后台 · 仪表盘{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <h3>📊 管理仪表盘</h3>
+
+    <!-- 统计卡片 -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-number">{{ resume_count }}</div>
+                <div class="stat-label">收到简历</div>
+                <a href="/admin/resumes" class="btn-admin-outline mt-3 d-inline-block">查看详情 →</a>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-number">{{ policy_count }}</div>
+                <div class="stat-label">政策文档</div>
+                <a href="/admin/policies" class="btn-admin-outline mt-3 d-inline-block">管理政策 →</a>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-number">{{ chat_count }}</div>
+                <div class="stat-label">对话消息</div>
+                <a href="/admin/api" class="btn-admin-outline mt-3 d-inline-block">API 配置 →</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快捷入口 + 最近简历 -->
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="stat-card" style="text-align:left;">
+                <h6 style="font-weight:600;color:var(--color-text);margin-bottom:16px;">⚡ 快捷操作</h6>
+                <a href="/admin/api" class="btn-admin-outline d-block mb-2" style="text-align:center;">
+                    <i class="bi bi-gear"></i> AI 模型 API 配置
+                </a>
+                <button class="btn-admin-outline d-block w-100" data-bs-toggle="modal" data-bs-target="#changePwdModal" style="text-align:center;">
+                    <i class="bi bi-key"></i> 修改密码
+                </button>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="stat-card" style="text-align:left;padding:16px;">
+                <h6 style="font-weight:600;color:var(--color-text);margin-bottom:12px;">📋 最近简历</h6>
+                {% if recent_resumes %}
+                    {% for r in recent_resumes %}
+                    <div style="padding:10px 0;border-bottom:1px solid var(--color-border);font-size:0.85rem;">
+                        <a href="/admin/resumes/{{ r.id }}" style="font-weight:500;color:var(--color-primary);text-decoration:none;">{{ r.name }}</a>
+                        <span style="color:var(--color-text-secondary);margin-left:8px;">{{ r.position or '-' }}</span>
+                        {% set st = r.status or 'submitted' %}
+                        <span class="status-tag {{ st }}" style="margin-left:6px;font-size:0.65rem;">
+                            {% if st == 'submitted' %}未查看{% elif st == 'viewed' %}已查看{% endif %}
+                        </span>
+                        <span style="float:right;font-size:0.75rem;color:var(--color-text-secondary);">{{ r.submitted_at.strftime('%m-%d %H:%M') }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color:var(--color-text-secondary);font-size:0.85rem;">暂无简历</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 修改密码弹窗 -->
+<div class="modal fade" id="changePwdModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">修改密码</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="changePwdForm">
+                    <div class="mb-3">
+                        <label class="form-label">原密码</label>
+                        <input type="password" class="form-control" name="old_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">新密码</label>
+                        <input type="password" class="form-control" name="new_password" minlength="6" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">确认新密码</label>
+                        <input type="password" class="form-control" name="confirm_password" minlength="6" required>
+                    </div>
+                </form>
+                <div id="pwdResult" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-admin-outline" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn-admin-primary" id="savePwdBtn">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('savePwdBtn').addEventListener('click', async function() {
+    const form = document.getElementById('changePwdForm');
+    const fd = new FormData(form);
+    try {
+        const resp = await fetch('/admin/change-password', { method: 'POST', body: fd });
+        const data = await resp.json();
+        const div = document.getElementById('pwdResult');
+        div.style.display = 'block';
+        div.innerHTML = data.success
+            ? `<div class="alert alert-success py-2" style="font-size:0.85rem;">${data.message}</div>`
+            : `<div class="alert alert-danger py-2" style="font-size:0.85rem;">${data.message}</div>`;
+        if (data.success) setTimeout(() => location.reload(), 1500);
+    } catch (e) {
+        document.getElementById('pwdResult').innerHTML = '<div class="alert alert-danger py-2">请求失败</div>';
+    }
+});
+</script>
+{% endblock %}

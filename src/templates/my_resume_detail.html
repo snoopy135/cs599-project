@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}简历详情 · 招聘政策问答助手{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <div class="chat-column">
+        <div class="chat-card">
+            <div class="chat-card-header">
+                <h5><i class="bi bi-file-earmark-text"></i> 简历详情</h5>
+                <a href="/my-resumes" class="badge-mode ai" style="text-decoration:none;">
+                    <i class="bi bi-arrow-left"></i> 返回列表
+                </a>
+            </div>
+
+            <div style="padding:24px;">
+                <!-- 状态头部 -->
+                <div class="resume-status-header status-{{ resume.status }}" style="text-align:center;padding:20px;border-radius:var(--radius-lg);margin-bottom:20px;">
+                    <div style="font-size:2rem;margin-bottom:8px;">
+                        {% if resume.status == 'submitted' %}📬
+                        {% elif resume.status == 'viewed' %}👀
+                        {% endif %}
+                    </div>
+                    <h6 style="font-weight:700;margin-bottom:4px;color:var(--color-text);">
+                        {% if resume.status == 'submitted' %}
+                            简历已投递，等待 HR 查看
+                        {% elif resume.status == 'viewed' %}
+                            HR 已查看您的简历
+                        {% endif %}
+                    </h6>
+                    <p style="font-size:0.8rem;color:var(--color-text-secondary);margin:0;">
+                        {% if resume.viewed_at %}
+                            HR 查看时间：{{ resume.viewed_at.strftime('%Y年%m月%d日 %H:%M') }}
+                        {% else %}
+                            投递时间：{{ resume.submitted_at.strftime('%Y年%m月%d日 %H:%M') if resume.submitted_at else '-' }}
+                        {% endif %}
+                    </p>
+                    {% if resume.updated_at and resume.updated_at != resume.submitted_at and (not resume.viewed_at or resume.updated_at != resume.viewed_at) %}
+                    <p style="font-size:0.75rem;color:var(--color-text-secondary);margin:4px 0 0;">
+                        最后修改：{{ resume.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- 进度条（两步） -->
+                <div class="status-progress mb-4">
+                    <div class="progress-step done">
+                        <div class="step-dot">1</div>
+                        <span class="step-label">投递成功</span>
+                    </div>
+                    <div class="progress-line {% if resume.status == 'viewed' %}done{% endif %}"></div>
+                    <div class="progress-step {% if resume.status == 'viewed' %}done{% endif %}">
+                        <div class="step-dot">2</div>
+                        <span class="step-label">HR 查看</span>
+                    </div>
+                </div>
+
+                <!-- 基本信息 -->
+                <div class="stat-card" style="text-align:left;padding:20px;margin-bottom:16px;">
+                    <h6 style="font-weight:600;color:var(--color-text);margin-bottom:12px;">👤 基本信息</h6>
+                    <table class="table table-borderless mb-0" style="font-size:0.875rem;">
+                        <tr><td style="width:100px;color:var(--color-text-secondary);">姓名</td><td style="font-weight:600;">{{ resume.name }}</td></tr>
+                        <tr><td style="color:var(--color-text-secondary);">邮箱</td><td>{{ resume.email or '-' }}</td></tr>
+                        <tr><td style="color:var(--color-text-secondary);">手机</td><td>{{ resume.phone or '-' }}</td></tr>
+                        <tr><td style="color:var(--color-text-secondary);">意向职位</td><td><span class="category-badge">{{ resume.position or '-' }}</span></td></tr>
+                    </table>
+                </div>
+
+                <!-- 简历内容预览 -->
+                {% if resume.content_text %}
+                <div class="stat-card" style="text-align:left;padding:20px;">
+                    <h6 style="font-weight:600;color:var(--color-text);margin-bottom:12px;">📝 简历文本</h6>
+                    <div style="background:#fafaff;border-radius:var(--radius-md);padding:16px;max-height:300px;overflow-y:auto;white-space:pre-wrap;font-size:0.85rem;line-height:1.8;color:var(--color-text);">
+                        {{ resume.content_text[:2000] }}{% if resume.content_text|length > 2000 %}...（内容过长，仅展示前2000字）{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="d-flex gap-2 mt-3">
+                    <a href="/my-resumes" class="btn-admin-outline"><i class="bi bi-arrow-left"></i> 返回</a>
+                    <button class="btn-admin-primary" onclick="window.location.href='/'">
+                        <i class="bi bi-chat-dots"></i> 去咨询 AI 助手
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

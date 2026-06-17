@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ resume.name }} · 简历详情{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>📄 简历详情 #{{ resume.id }}</h3>
+        <div class="d-flex gap-2">
+            {% if resume.file_path %}
+            <a href="/admin/resumes/{{ resume.id }}/download" class="btn-admin-primary">
+                <i class="bi bi-download"></i> 下载
+            </a>
+            {% endif %}
+            <a href="/admin/resumes" class="btn-admin-outline"><i class="bi bi-arrow-left"></i> 返回列表</a>
+        </div>
+    </div>
+
+    <div class="stat-card" style="text-align:left;padding:24px;margin-bottom:20px;">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <h6 style="font-weight:600;color:var(--color-text);margin:0;">👤 基本信息</h6>
+            <span class="resume-status-badge status-{{ resume.status }}">
+                {% if resume.status == 'submitted' %}
+                    🟡 未被查看
+                {% elif resume.status == 'viewed' %}
+                    🔵 已被查看
+                {% endif %}
+            </span>
+        </div>
+        <table class="table table-borderless mb-0" style="font-size:0.9rem;">
+            <tr><td style="width:120px;color:var(--color-text-secondary);font-weight:500;">姓名</td><td style="font-weight:600;">{{ resume.name }}</td></tr>
+            <tr><td style="color:var(--color-text-secondary);font-weight:500;">邮箱</td><td>{{ resume.email or '-' }}</td></tr>
+            <tr><td style="color:var(--color-text-secondary);font-weight:500;">手机</td><td>{{ resume.phone or '-' }}</td></tr>
+            <tr><td style="color:var(--color-text-secondary);font-weight:500;">意向职位</td><td><span class="category-badge">{{ resume.position or '-' }}</span></td></tr>
+            <tr><td style="color:var(--color-text-secondary);font-weight:500;">投递时间</td><td>{{ resume.submitted_at.strftime('%Y年%m月%d日 %H:%M:%S') if resume.submitted_at else '-' }}</td></tr>
+            {% if resume.viewed_at %}
+            <tr><td style="color:var(--color-text-secondary);font-weight:500;">查看时间</td><td>{{ resume.viewed_at.strftime('%Y年%m月%d日 %H:%M:%S') }}</td></tr>
+            {% endif %}
+            {% if resume.updated_at and resume.updated_at != resume.submitted_at %}
+            <tr><td style="color:var(--color-text-secondary);font-weight:500;">最后更新</td><td>{{ resume.updated_at.strftime('%Y年%m月%d日 %H:%M:%S') }}</td></tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <div class="stat-card" style="text-align:left;padding:24px;">
+        <h6 style="font-weight:600;color:var(--color-text);margin-bottom:16px;">📝 简历文本内容</h6>
+        <div style="background:#fafaff;border-radius:var(--radius-md);padding:18px;max-height:400px;overflow-y:auto;white-space:pre-wrap;font-size:0.875rem;line-height:1.8;color:var(--color-text);">
+            {{ resume.content_text or '（未提取到文本内容）' }}
+        </div>
+    </div>
+</div>
+{% endblock %}
